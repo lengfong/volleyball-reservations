@@ -2,14 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Volleyball Pool Reservation System (LIVE Database)</title>
+    <title>Volleyball Pool Reservation System (Admin Delete)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
-        h1, h2 { text-align: center; color: #333; }
+        h1, h2, h3 { text-align: center; color: #333; }
+        
+        /* New Admin Control Panel Style */
+        #admin-control {
+            text-align: center;
+            margin: 20px auto 30px;
+            padding: 15px;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            background-color: #ffe0e0;
+            width: 600px;
+            max-width: 90%;
+        }
+        #admin-control input[type="password"] {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 200px;
+        }
+        #admin-control button {
+            padding: 8px 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #admin-control button:hover {
+            background-color: #c82333;
+        }
+
+        /* Styles for Match Containers */
+        .match-container { 
+            border: 2px solid #007bff; 
+            border-radius: 10px; 
+            padding: 20px; 
+            margin-bottom: 40px; 
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Admin Details for both matches */
+        .admin-details { 
+            text-align: center; 
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            width: 600px;
+            max-width: 90%;
+            margin: 0 auto 20px auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        .admin-details h3 {
+            grid-column: 1 / -1;
+        }
+        .admin-details label { font-weight: bold; margin-right: 10px; justify-self: end; }
+        .admin-details input, .admin-details select { 
+            padding: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 3px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            justify-self: start;
+        }
+        .admin-details input[type="text"][readonly], .admin-details input[type="date"] {
+            cursor: pointer;
+        }
+        /* Style for the group of time selectors */
+        .time-select-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .time-select-group select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            flex-grow: 1; /* Allow selects to grow within the group */
+        }
+        .time-label {
+            font-weight: bold;
+            margin-right: 5px;
+            white-space: nowrap; /* Prevent "Start Time" from wrapping */
+        }
+        .time-input-row {
+            display: contents; /* Allows children to participate in the grid layout */
+        }
+        
         /* Roster List Styles */
-        #position-list { list-style: none; padding: 0; width: 600px; max-width: 90%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        #position-list li { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        #position-list li:last-child { border-bottom: none; }
+        .position-list { list-style: none; padding: 0; width: 600px; max-width: 90%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .position-list li { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .position-list li:last-child { border-bottom: none; }
         .pos-label { font-weight: bold; }
         /* Reserved Slot Styles */
         .reserved-slot { background-color: #f8d7da; color: #721c24; text-decoration: none; } 
@@ -28,13 +121,17 @@
             cursor: pointer; 
             font-size: 12px; 
             font-weight: bold; 
+            display: none; 
+        }
+        .remove-btn.active {
+            display: inline-block;
         }
         .remove-btn:hover { background: #c82333; }
         /* Form/Message Styles */
-        #reservation-form { width: 400px; min-width: 300px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
-        #reservation-form h3 { margin-bottom: 15px; }
-        #reservation-form input { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
-        #message { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .reservation-form { width: 400px; min-width: 300px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        .reservation-form h3 { margin-bottom: 15px; }
+        .reservation-form input[type="text"] { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
+        .message { margin-top: 15px; padding: 10px; border-radius: 4px; }
         .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
         .success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
     </style>
@@ -42,103 +139,308 @@
 <body>
 
     <h1>🏐 Volleyball Pool Reservation</h1>
-    <h2 id="match-details"></h2>
-
-    <div id="reservation-form">
-        <h3>1. Enter Your Name</h3>
-        <input type="text" id="player-name" placeholder="Your Name" required>
-        
-        <h3>2. Click an OPEN Slot Below</h3>
-        <p id="message"></p>
+    
+    <div id="admin-control">
+        <h3>Admin Access</h3>
+        <input type="password" id="admin-code-input" placeholder="Enter Admin Code to Delete Entries">
+        <button onclick="checkAdminCode()">Unlock Admin</button>
     </div>
+    
+    <div id="match-1-container" class="match-container">
+        <h2 id="match-details-1">Loading Match 1 Details...</h2>
+        
+        <div class="admin-details">
+            <h3>Match 1 Settings</h3>
+            
+            <label for="match-date-display-1">Date:</label>
+            <input 
+                type="text" 
+                id="match-date-display-1" 
+                value="2025-12-05" 
+                readonly 
+                onclick="document.getElementById('match-date-input-1').showPicker();"
+            >
+            <input 
+                type="date" 
+                id="match-date-input-1" 
+                style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"
+                onchange="document.getElementById('match-date-display-1').value = this.value; updateMatchDetails(1);"
+            >
+            
+            <label for="court-select-1">Court:</label>
+            <select id="court-select-1" onchange="updateMatchDetails(1)">
+                <option value="TBD">TBD (To Be Determined)</option>
+                <option value="Court 1" selected>Court 1</option>
+                <option value="Court 2">Court 2</option>
+                <option value="Court 3">Court 3</option>
+                <option value="Court 4">Court 4</option>
+                <option value="Court 5">Court 5</option>
+                <option value="Court 6">Court 6</option>
+                <option value="Court 7">Court 7</option>
+                <option value="Court 8">Court 8</option>
+                <option value="Court 9">Court 9</option>
+                <option value="Court 10">Court 10</option>
+                <option value="Court 11">Court 11</option>
+                <option value="Court 12">Court 12</option>
+            </select>
+            
+            <label class="time-label">Start Time:</label>
+            <div class="time-select-group">
+                <select id="start-hour-1" onchange="updateMatchDetails(1)">
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7" selected>7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <select id="start-minute-1" onchange="updateMatchDetails(1)">
+                    <option value="00" selected>:00</option><option value="30">:30</option>
+                </select>
+                <select id="start-ampm-1" onchange="updateMatchDetails(1)">
+                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                </select>
+            </div>
+            
+            <label class="time-label">End Time:</label>
+            <div class="time-select-group">
+                <select id="end-hour-1" onchange="updateMatchDetails(1)">
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9" selected>9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <select id="end-minute-1" onchange="updateMatchDetails(1)">
+                    <option value="00" selected>:00</option><option value="30">:30</option>
+                </select>
+                <select id="end-ampm-1" onchange="updateMatchDetails(1)">
+                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                </select>
+            </div>
+            
+            <label for="match-location-input-1">Location:</label>
+            <input type="text" id="match-location-input-1" value="Performance Zone" onchange="updateMatchDetails(1)">
+        </div>
+        
+        <div class="reservation-form">
+            <h3>1. Enter Your Name</h3>
+            <input type="text" id="player-name-1" placeholder="Your Name" required>
+            
+            <h3>2. Click an OPEN Slot Below</h3>
+            <p id="message-1" class="message"></p>
+        </div>
 
-    <ul id="position-list">
-        </ul>
+        <ul id="position-list-1" class="position-list">
+            </ul>
+    </div>
+    
+    <hr>
+    
+    <div id="match-2-container" class="match-container">
+        <h2 id="match-details-2">Loading Match 2 Details...</h2>
+        
+        <div class="admin-details">
+            <h3>Match 2 Settings</h3>
+            
+            <label for="match-date-display-2">Date:</label>
+            <input 
+                type="text" 
+                id="match-date-display-2" 
+                value="2025-12-05" 
+                readonly 
+                onclick="document.getElementById('match-date-input-2').showPicker();"
+            >
+            <input 
+                type="date" 
+                id="match-date-input-2" 
+                style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"
+                onchange="document.getElementById('match-date-display-2').value = this.value; updateMatchDetails(2);"
+            >
+            
+            <label for="court-select-2">Court:</label>
+            <select id="court-select-2" onchange="updateMatchDetails(2)">
+                <option value="TBD">TBD (To Be Determined)</option>
+                <option value="Court 2" selected>Court 2</option>
+                <option value="Court 1">Court 1</option>
+                <option value="Court 3">Court 3</option>
+                <option value="Court 4">Court 4</option>
+                <option value="Court 5">Court 5</option>
+                <option value="Court 6">Court 6</option>
+                <option value="Court 7">Court 7</option>
+                <option value="Court 8">Court 8</option>
+                <option value="Court 9">Court 9</option>
+                <option value="Court 10">Court 10</option>
+                <option value="Court 11">Court 11</option>
+                <option value="Court 12">Court 12</option>
+            </select>
+
+            <label class="time-label">Start Time:</label>
+            <div class="time-select-group">
+                <select id="start-hour-2" onchange="updateMatchDetails(2)">
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <select id="start-minute-2" onchange="updateMatchDetails(2)">
+                    <option value="00" selected>:00</option><option value="30">:30</option>
+                </select>
+                <select id="start-ampm-2" onchange="updateMatchDetails(2)">
+                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                </select>
+            </div>
+            
+            <label class="time-label">End Time:</label>
+            <div class="time-select-group">
+                <select id="end-hour-2" onchange="updateMatchDetails(2)">
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10" selected>10</option><option value="11">11</option><option value="12">12</option>
+                </select>
+                <select id="end-minute-2" onchange="updateMatchDetails(2)">
+                    <option value="00" selected>:00</option><option value="30">:30</option>
+                </select>
+                <select id="end-ampm-2" onchange="updateMatchDetails(2)">
+                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                </select>
+            </div>
+
+            <label for="match-location-input-2">Location:</label>
+            <input type="text" id="match-location-input-2" value="Performance Zone" onchange="updateMatchDetails(2)">
+        </div>
+        
+        <div class="reservation-form">
+            <h3>1. Enter Your Name</h3>
+            <input type="text" id="player-name-2" placeholder="Your Name" required>
+            
+            <h3>2. Click an OPEN Slot Below</h3>
+            <p id="message-2" class="message"></p>
+        </div>
+
+        <ul id="position-list-2" class="position-list">
+            </ul>
+    </div>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
         // ==========================================================
-        // STEP 2: PASTE YOUR FIREBASE CONFIGURATION HERE
-        // REPLACE THE PLACEHOLDER VALUES WITH YOUR ACTUAL CREDENTIALS
+        // FIREBASE CONFIGURATION (Use your unique credentials)
         // ==========================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyD2Dz--Ey8wFfTjjJG33Eb8nnf1Q9Rbw8o", // <--- PASTE YOUR API KEY
-            authDomain: "volleyballreservationapp.firebaseapp.com", // <--- PASTE YOUR AUTH DOMAIN
-            projectId: "volleyballreservationapp", // <--- PASTE YOUR PROJECT ID
+            apiKey: "AIzaSyD2Dz--Ey8wFfTjjJG33Eb8nnf1Q9Rbw8o", 
+            authDomain: "volleyballreservationapp.firebaseapp.com",
+            projectId: "volleyballreservationapp", 
             storageBucket: "volleyballreservationapp.firebasestorage.app",
             messagingSenderId: "381261749452",
             appId: "1:381261749452:web:5a07063f5a65d98ff4f669",
             measurementId: "G-VB9Z6KC6P2"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
-        // Reference the collection where reservations will be stored.
-        // This MUST match the Collection ID you created in Firebase: 'reservations_match_101'
-        const reservationsCollection = db.collection("reservations_match_101");
+        const reservationsCollection1 = db.collection("reservations_match_101");
+        const reservationsCollection2 = db.collection("reservations_match_102");
+        
+        // --- ADMIN CODE SETUP ---
+        const ADMIN_CODE = "youknowHTMLtooisee"; 
+        let isAdminActive = false;
+        
+        let MATCH_DATA_1 = { matchId: 101, reservations: [] };
+        let MATCH_DATA_2 = { matchId: 102, reservations: [] }; 
+
+        const MAX_SLOTS = { Setter: 2, Outside: 4, Middle: 4, RS: 2, Total: 12 };
+        
+        // ==========================================================
+        // HELPER FUNCTIONS
         // ==========================================================
 
-        // Data storage is now local cache synced with Firebase
-        let MATCH_DATA = {
-            matchId: 101,
-            date: "2025-12-05",
-            time: "7:00 PM",
-            reservations: [] // Local array to hold fetched reservations
-        };
-
-        // Define the required slots and maximums
-        const MAX_SLOTS = {
-            Setter: 2,
-            Outside: 4,
-            Middle: 4,
-            RS: 2,
-            Total: 12
-        };
-        
-        // Helper to get current reservation counts from the local cache
-        function getPoolCounts() {
-            const reservations = MATCH_DATA.reservations;
-            const counts = {
-                Setter: 0,
-                Outside: 0,
-                Middle: 0,
-                RS: 0,
-                Total: reservations.length
-            };
-
-            reservations.forEach(r => {
-                counts[r.position]++;
-            });
-            return counts;
+        function getMatchData(matchId) {
+            return matchId === 1 ? MATCH_DATA_1 : MATCH_DATA_2;
         }
 
-        // --- ADMIN FUNCTION: REMOVE RESERVATION (async) ---
-        // docId is the unique Firestore Document ID
-        async function removeReservation(docId) {
-            try {
-                // Delete the document from Firestore using its document ID
-                await reservationsCollection.doc(docId).delete();
-                // The real-time listener will automatically update the UI.
+        function getCollection(matchId) {
+            return matchId === 1 ? reservationsCollection1 : reservationsCollection2;
+        }
 
-                const messageElement = document.getElementById('message');
+        function getElementId(base, matchId) {
+            return `${base}-${matchId}`;
+        }
+
+        function getPoolCounts(matchId) {
+            const data = getMatchData(matchId);
+            const reservations = data.reservations;
+            const counts = { Setter: 0, Outside: 0, Middle: 0, RS: 0, Total: reservations.length };
+            reservations.forEach(r => { counts[r.position]++; });
+            return counts;
+        }
+        
+        // ==========================================================
+        // CORE LOGIC
+        // ==========================================================
+        
+        /**
+         * Reads the current admin inputs (date, time, court, location) 
+         * and updates the main <h2> header for the specified match.
+         */
+        function updateMatchDetails(matchId) {
+            // Read from dynamic inputs for the specified matchId
+            const date = document.getElementById(`match-date-display-${matchId}`).value;
+            const court = document.getElementById(`court-select-${matchId}`).value;
+            const location = document.getElementById(`match-location-input-${matchId}`).value;
+
+            // Read Time components for Start Time
+            const startHour = document.getElementById(`start-hour-${matchId}`).value;
+            const startMinute = document.getElementById(`start-minute-${matchId}`).value;
+            const startAmPm = document.getElementById(`start-ampm-${matchId}`).value;
+            
+            // Read Time components for End Time
+            const endHour = document.getElementById(`end-hour-${matchId}`).value;
+            const endMinute = document.getElementById(`end-minute-${matchId}`).value;
+            const endAmPm = document.getElementById(`end-ampm-${matchId}`).value;
+
+            // Format the time string
+            const startTime = `${startHour}:${startMinute} ${startAmPm}`;
+            const endTime = `${endHour}:${endMinute} ${endAmPm}`;
+            const time = `${startTime} - ${endTime}`;
+            
+            const matchDetailsElement = document.getElementById(`match-details-${matchId}`);
+
+            // Update the main header h2
+            matchDetailsElement.textContent = 
+                `${date} | ${time} | ${court} | ${location} | Slots: ${MAX_SLOTS.Total}`;
+        }
+        
+        function checkAdminCode() {
+            const inputCode = document.getElementById('admin-code-input').value.trim();
+            const removeButtons = document.querySelectorAll('.remove-btn');
+            
+            if (inputCode === ADMIN_CODE) {
+                isAdminActive = true;
+                removeButtons.forEach(btn => btn.classList.add('active'));
+                document.getElementById('admin-code-input').style.border = '2px solid green';
+                document.getElementById('admin-code-input').placeholder = 'Admin Unlocked!';
+            } else {
+                isAdminActive = false;
+                removeButtons.forEach(btn => btn.classList.remove('active'));
+                document.getElementById('admin-code-input').style.border = '2px solid red';
+                document.getElementById('admin-code-input').placeholder = 'Incorrect Code';
+            }
+        }
+
+        async function removeReservation(docId, matchId) {
+            if (!isAdminActive) {
+                const messageElement = document.getElementById(getElementId('message', matchId));
+                messageElement.className = 'error';
+                messageElement.textContent = `🚫 Admin code required to delete entries.`;
+                return;
+            }
+
+            const collection = getCollection(matchId);
+            try {
+                await collection.doc(docId).delete();
+                const messageElement = document.getElementById(getElementId('message', matchId));
                 messageElement.className = 'success';
-                messageElement.textContent = `✅ Reservation removed successfully from database. Slot is now OPEN.`;
+                messageElement.textContent = `✅ Match ${matchId} reservation removed successfully.`;
             } catch (error) {
-                const messageElement = document.getElementById('message');
+                const messageElement = document.getElementById(getElementId('message', matchId));
                 messageElement.className = 'error';
                 messageElement.textContent = `🚫 Error removing reservation: ${error.message}`;
             }
         }
-        // ------------------------------------------------
 
-        // Function called when an OPEN slot is clicked
-        function handleReservationClick(position) {
-            const playerName = document.getElementById('player-name').value.trim();
-            const messageElement = document.getElementById('message');
+        function handleReservationClick(position, matchId) {
+            const playerName = document.getElementById(getElementId('player-name', matchId)).value.trim();
+            const messageElement = document.getElementById(getElementId('message', matchId));
             
             if (!playerName) {
                 messageElement.className = 'error';
@@ -146,17 +448,17 @@
                 return;
             }
             
-            attemptReservation(position, playerName);
+            attemptReservation(position, playerName, matchId);
         }
 
-        // Function to handle the reservation attempt and validation (async)
-        async function attemptReservation(position, playerName) {
-            const counts = getPoolCounts();
+        async function attemptReservation(position, playerName, matchId) {
+            const counts = getPoolCounts(matchId);
+            const collection = getCollection(matchId);
+            const data = getMatchData(matchId);
             let message = "";
             let isError = false;
             
             // --- VALIDATION CHECKS ---
-            
             if (counts.Total >= MAX_SLOTS.Total) {
                 message = "The total pool is full (12 players).";
                 isError = true;
@@ -165,23 +467,22 @@
                 isError = true;
             } 
             
-            // Prevent duplicate reservations by the same player name
-            const isAlreadyReserved = MATCH_DATA.reservations.some(
+            const isAlreadyReserved = data.reservations.some(
                 r => r.playerName.toLowerCase() === playerName.toLowerCase()
             );
 
             if (!isError && isAlreadyReserved) {
-                message = `${playerName} has already reserved a spot and cannot reserve another.`;
+                message = `${playerName} has already reserved a spot in Match ${matchId} and cannot reserve another.`;
                 isError = true;
             }
             
             // --- Process Reservation or Error ---
-            const messageElement = document.getElementById('message');
+            const messageElement = document.getElementById(getElementId('message', matchId));
             messageElement.className = '';
             
             if (isError) {
                 messageElement.classList.add('error');
-                messageElement.textContent = `🚫 Error: ${message}`;
+                messageElement.textContent = `🚫 Match ${matchId} Error: ${message}`;
                 return;
             }
             
@@ -189,40 +490,34 @@
             const newReservation = { 
                 playerName: playerName, 
                 position: position, 
-                // Use serverTimestamp for reliable ordering
                 timestamp: firebase.firestore.FieldValue.serverTimestamp() 
             };
 
             try {
-                await reservationsCollection.add(newReservation);
+                await collection.add(newReservation);
                 
                 messageElement.classList.add('success');
-                messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot and saved to database.`;
+                messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot in Match ${matchId}.`;
                 
-                // Real-time listener handles the renderRoster call
             } catch (error) {
                 messageElement.classList.add('error');
-                messageElement.textContent = `🚫 Database Error: ${error.message}`;
+                messageElement.textContent = `🚫 Database Error (Match ${matchId}): ${error.message}`;
             }
         }
 
-        // Function to dynamically update the HTML list display
-        function renderRoster() {
-            const positionList = document.getElementById('position-list');
+        function renderRoster(matchId) {
+            const data = getMatchData(matchId);
+            const positionList = document.getElementById(getElementId('position-list', matchId));
             positionList.innerHTML = '';
             
-            // Sort reservations: First by position (for visual grouping), then by timestamp
-            const reservedSlots = [...MATCH_DATA.reservations].sort((a, b) => {
-                // Ensure timestamp exists before using toMillis
+            const reservedSlots = [...data.reservations].sort((a, b) => {
                 const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
                 const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
                 
                 if (a.position !== b.position) {
-                    // Custom sort order based on MAX_SLOTS keys for visual consistency
                     const order = Object.keys(MAX_SLOTS);
                     return order.indexOf(a.position) - order.indexOf(b.position);
                 }
-                // Fallback sort by timestamp if positions are the same
                 return timeA - timeB;
             });
             
@@ -235,11 +530,12 @@
                 
                 renderedSlots[r.position]++;
                 
-                // r.id holds the Firestore document ID for deletion
+                const removeBtnClass = isAdminActive ? 'remove-btn active' : 'remove-btn';
+                
                 li.innerHTML = `<span class="pos-label">${r.position} Slot ${renderedSlots[r.position]}</span> 
                                 <span class="player-info">
                                     Reserved by: ${r.playerName} 
-                                    <button class="remove-btn" onclick="removeReservation('${r.id}')">X Remove</button>
+                                    <button class="${removeBtnClass}" onclick="removeReservation('${r.id}', ${matchId})">X Remove</button>
                                 </span>`;
                 positionList.appendChild(li);
             });
@@ -256,7 +552,7 @@
                     
                     const currentSlotNumber = renderedSlots[position] + i + 1;
                     li.setAttribute('data-position', position);
-                    li.onclick = () => handleReservationClick(position);
+                    li.onclick = () => handleReservationClick(position, matchId); 
                     
                     li.innerHTML = `<span class="pos-label">${position} Slot ${currentSlotNumber}</span>
                                     <span class="player-info">CLICK TO RESERVE</span>`;
@@ -265,24 +561,34 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('match-details').textContent = 
-                `Match #${MATCH_DATA.matchId} on ${MATCH_DATA.date} at ${MATCH_DATA.time} | Total Slots: ${MAX_SLOTS.Total}`;
+        // ==========================================================
+        // INITIALIZATION AND LISTENERS
+        // ==========================================================
+
+        function initializeMatch(matchId) {
+            const data = getMatchData(matchId);
+            const collection = getCollection(matchId);
             
-            // STEP 3: SET UP REAL-TIME LISTENER
-            // This listener fetches the data and calls renderRoster whenever the database changes.
-            reservationsCollection.onSnapshot(snapshot => {
-                MATCH_DATA.reservations = [];
+            // Initial call to set the header content
+            updateMatchDetails(matchId);
+
+            // Set up Real-Time Listener
+            collection.onSnapshot(snapshot => {
+                data.reservations = [];
                 snapshot.forEach(doc => {
-                    // Push the data, including the document ID (doc.id) for removal
-                    MATCH_DATA.reservations.push({ ...doc.data(), id: doc.id });
+                    data.reservations.push({ ...doc.data(), id: doc.id });
                 });
-                renderRoster();
+                renderRoster(matchId);
             }, error => {
-                document.getElementById('message').className = 'error';
-                document.getElementById('message').textContent = `Database connection failed. Check console for details.`;
-                console.error("Firestore Listen Failed:", error);
+                document.getElementById(getElementId('message', matchId)).className = 'error';
+                document.getElementById(getElementId('message', matchId)).textContent = `Match ${matchId} Database connection failed.`;
+                console.error(`Firestore Listen Failed for Match ${matchId}:`, error);
             });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMatch(1);
+            initializeMatch(2); 
         });
     </script>
 </body>
