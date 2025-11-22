@@ -75,7 +75,12 @@
             box-sizing: border-box; 
             justify-self: start;
         }
-        .admin-details input[type="text"][readonly], .admin-details input[type="date"] {
+        /* Style to indicate disabled state */
+        .admin-details input:disabled, .admin-details select:disabled {
+            background-color: #e0e0e0;
+            cursor: not-allowed;
+        }
+        .admin-details input[type="text"][readonly]:not(:disabled), .admin-details input[type="date"]:not(:disabled) {
             cursor: pointer;
         }
         /* Style for the group of time selectors */
@@ -142,7 +147,7 @@
     
     <div id="admin-control">
         <h3>Admin Access</h3>
-        <input type="password" id="admin-code-input" placeholder="Enter Admin Code to Delete Entries">
+        <input type="password" id="admin-code-input" placeholder="Enter Admin Code to Modify Settings and Delete Entries">
         <button onclick="checkAdminCode()">Unlock Admin</button>
     </div>
     
@@ -156,21 +161,20 @@
             <input 
                 type="text" 
                 id="match-date-display-1" 
-                value="2025-12-05" 
+                value="Loading..." 
                 readonly 
-                onclick="document.getElementById('match-date-input-1').showPicker();"
+                disabled onclick="document.getElementById('match-date-input-1').showPicker();"
             >
             <input 
                 type="date" 
                 id="match-date-input-1" 
                 style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"
-                onchange="document.getElementById('match-date-display-1').value = this.value; updateMatchDetails(1);"
+                onchange="document.getElementById('match-date-display-1').value = this.value; saveMatchSettings(1);"
             >
             
             <label for="court-select-1">Court:</label>
-            <select id="court-select-1" onchange="updateMatchDetails(1)">
-                <option value="TBD">TBD (To Be Determined)</option>
-                <option value="Court 1" selected>Court 1</option>
+            <select id="court-select-1" onchange="saveMatchSettings(1)" disabled> <option value="TBD">TBD (To Be Determined)</option>
+                <option value="Court 1">Court 1</option>
                 <option value="Court 2">Court 2</option>
                 <option value="Court 3">Court 3</option>
                 <option value="Court 4">Court 4</option>
@@ -186,33 +190,26 @@
             
             <label class="time-label">Start Time:</label>
             <div class="time-select-group">
-                <select id="start-hour-1" onchange="updateMatchDetails(1)">
-                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7" selected>7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                <select id="start-hour-1" onchange="saveMatchSettings(1)" disabled> <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <select id="start-minute-1" onchange="updateMatchDetails(1)">
-                    <option value="00" selected>:00</option><option value="30">:30</option>
+                <select id="start-minute-1" onchange="saveMatchSettings(1)" disabled> <option value="00">:00</option><option value="30">:30</option>
                 </select>
-                <select id="start-ampm-1" onchange="updateMatchDetails(1)">
-                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                <select id="start-ampm-1" onchange="saveMatchSettings(1)" disabled> <option value="AM">AM</option><option value="PM">PM</option>
                 </select>
             </div>
             
             <label class="time-label">End Time:</label>
             <div class="time-select-group">
-                <select id="end-hour-1" onchange="updateMatchDetails(1)">
-                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9" selected>9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                <select id="end-hour-1" onchange="saveMatchSettings(1)" disabled> <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <select id="end-minute-1" onchange="updateMatchDetails(1)">
-                    <option value="00" selected>:00</option><option value="30">:30</option>
+                <select id="end-minute-1" onchange="saveMatchSettings(1)" disabled> <option value="00">:00</option><option value="30">:30</option>
                 </select>
-                <select id="end-ampm-1" onchange="updateMatchDetails(1)">
-                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                <select id="end-ampm-1" onchange="saveMatchSettings(1)" disabled> <option value="AM">AM</option><option value="PM">PM</option>
                 </select>
             </div>
             
             <label for="match-location-input-1">Location:</label>
-            <input type="text" id="match-location-input-1" value="Performance Zone" onchange="updateMatchDetails(1)">
-        </div>
+            <input type="text" id="match-location-input-1" value="Loading..." onchange="saveMatchSettings(1)" disabled> </div>
         
         <div class="reservation-form">
             <h3>1. Enter Your Name</h3>
@@ -238,21 +235,20 @@
             <input 
                 type="text" 
                 id="match-date-display-2" 
-                value="2025-12-05" 
+                value="Loading..." 
                 readonly 
-                onclick="document.getElementById('match-date-input-2').showPicker();"
+                disabled onclick="document.getElementById('match-date-input-2').showPicker();"
             >
             <input 
                 type="date" 
                 id="match-date-input-2" 
                 style="position:absolute; opacity:0; width:0; height:0; pointer-events:none;"
-                onchange="document.getElementById('match-date-display-2').value = this.value; updateMatchDetails(2);"
+                onchange="document.getElementById('match-date-display-2').value = this.value; saveMatchSettings(2);"
             >
             
             <label for="court-select-2">Court:</label>
-            <select id="court-select-2" onchange="updateMatchDetails(2)">
-                <option value="TBD">TBD (To Be Determined)</option>
-                <option value="Court 2" selected>Court 2</option>
+            <select id="court-select-2" onchange="saveMatchSettings(2)" disabled> <option value="TBD">TBD (To Be Determined)</option>
+                <option value="Court 2">Court 2</option>
                 <option value="Court 1">Court 1</option>
                 <option value="Court 3">Court 3</option>
                 <option value="Court 4">Court 4</option>
@@ -268,33 +264,26 @@
 
             <label class="time-label">Start Time:</label>
             <div class="time-select-group">
-                <select id="start-hour-2" onchange="updateMatchDetails(2)">
-                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                <select id="start-hour-2" onchange="saveMatchSettings(2)" disabled> <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <select id="start-minute-2" onchange="updateMatchDetails(2)">
-                    <option value="00" selected>:00</option><option value="30">:30</option>
+                <select id="start-minute-2" onchange="saveMatchSettings(2)" disabled> <option value="00">:00</option><option value="30">:30</option>
                 </select>
-                <select id="start-ampm-2" onchange="updateMatchDetails(2)">
-                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                <select id="start-ampm-2" onchange="saveMatchSettings(2)" disabled> <option value="AM">AM</option><option value="PM">PM</option>
                 </select>
             </div>
             
             <label class="time-label">End Time:</label>
             <div class="time-select-group">
-                <select id="end-hour-2" onchange="updateMatchDetails(2)">
-                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10" selected>10</option><option value="11">11</option><option value="12">12</option>
+                <select id="end-hour-2" onchange="saveMatchSettings(2)" disabled> <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
                 </select>
-                <select id="end-minute-2" onchange="updateMatchDetails(2)">
-                    <option value="00" selected>:00</option><option value="30">:30</option>
+                <select id="end-minute-2" onchange="saveMatchSettings(2)" disabled> <option value="00">:00</option><option value="30">:30</option>
                 </select>
-                <select id="end-ampm-2" onchange="updateMatchDetails(2)">
-                    <option value="AM">AM</option><option value="PM" selected>PM</option>
+                <select id="end-ampm-2" onchange="saveMatchSettings(2)" disabled> <option value="AM">AM</option><option value="PM">PM</option>
                 </select>
             </div>
 
             <label for="match-location-input-2">Location:</label>
-            <input type="text" id="match-location-input-2" value="Performance Zone" onchange="updateMatchDetails(2)">
-        </div>
+            <input type="text" id="match-location-input-2" value="Loading..." onchange="saveMatchSettings(2)" disabled> </div>
         
         <div class="reservation-form">
             <h3>1. Enter Your Name</h3>
@@ -328,9 +317,15 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
+        // --- RESERVATION COLLECTIONS ---
         const reservationsCollection1 = db.collection("reservations_match_101");
         const reservationsCollection2 = db.collection("reservations_match_102");
         
+        // --- NEW SETTINGS COLLECTION ---
+        const settingsCollection = db.collection("match_settings");
+        const matchSettingsDoc1 = settingsCollection.doc("match_1");
+        const matchSettingsDoc2 = settingsCollection.doc("match_2");
+
         // --- ADMIN CODE SETUP ---
         const ADMIN_CODE = "youknowHTMLtooisee"; 
         let isAdminActive = false;
@@ -352,6 +347,10 @@
             return matchId === 1 ? reservationsCollection1 : reservationsCollection2;
         }
 
+        function getSettingsDoc(matchId) {
+            return matchId === 1 ? matchSettingsDoc1 : matchSettingsDoc2;
+        }
+
         function getElementId(base, matchId) {
             return `${base}-${matchId}`;
         }
@@ -365,39 +364,26 @@
         }
         
         // ==========================================================
-        // CORE LOGIC
+        // ADMIN LOCK/UNLOCK LOGIC
         // ==========================================================
         
-        /**
-         * Reads the current admin inputs (date, time, court, location) 
-         * and updates the main <h2> header for the specified match.
-         */
-        function updateMatchDetails(matchId) {
-            // Read from dynamic inputs for the specified matchId
-            const date = document.getElementById(`match-date-display-${matchId}`).value;
-            const court = document.getElementById(`court-select-${matchId}`).value;
-            const location = document.getElementById(`match-location-input-${matchId}`).value;
+        function getAdminInputs(matchId) {
+            const container = document.getElementById(`match-${matchId}-container`);
+            // Exclude the hidden date input, but include the visible date display
+            return container.querySelectorAll('.admin-details input:not([type="date"]), .admin-details select');
+        }
 
-            // Read Time components for Start Time
-            const startHour = document.getElementById(`start-hour-${matchId}`).value;
-            const startMinute = document.getElementById(`start-minute-${matchId}`).value;
-            const startAmPm = document.getElementById(`start-ampm-${matchId}`).value;
-            
-            // Read Time components for End Time
-            const endHour = document.getElementById(`end-hour-${matchId}`).value;
-            const endMinute = document.getElementById(`end-minute-${matchId}`).value;
-            const endAmPm = document.getElementById(`end-ampm-${matchId}`).value;
-
-            // Format the time string
-            const startTime = `${startHour}:${startMinute} ${startAmPm}`;
-            const endTime = `${endHour}:${endMinute} ${endAmPm}`;
-            const time = `${startTime} - ${endTime}`;
-            
-            const matchDetailsElement = document.getElementById(`match-details-${matchId}`);
-
-            // Update the main header h2
-            matchDetailsElement.textContent = 
-                `${date} | ${time} | ${court} | ${location} | Slots: ${MAX_SLOTS.Total}`;
+        function setAdminInputsEnabled(isEnabled) {
+            [1, 2].forEach(matchId => {
+                const inputs = getAdminInputs(matchId);
+                inputs.forEach(input => {
+                    if (isEnabled) {
+                        input.removeAttribute('disabled');
+                    } else {
+                        input.setAttribute('disabled', 'true');
+                    }
+                });
+            });
         }
         
         function checkAdminCode() {
@@ -406,17 +392,163 @@
             
             if (inputCode === ADMIN_CODE) {
                 isAdminActive = true;
+                
+                // 1. Enable Match Settings Inputs
+                setAdminInputsEnabled(true);
+                
+                // 2. Enable Delete Buttons
                 removeButtons.forEach(btn => btn.classList.add('active'));
+                
                 document.getElementById('admin-code-input').style.border = '2px solid green';
                 document.getElementById('admin-code-input').placeholder = 'Admin Unlocked!';
             } else {
                 isAdminActive = false;
+                
+                // 1. Disable Match Settings Inputs
+                setAdminInputsEnabled(false);
+                
+                // 2. Disable Delete Buttons
                 removeButtons.forEach(btn => btn.classList.remove('active'));
+                
                 document.getElementById('admin-code-input').style.border = '2px solid red';
                 document.getElementById('admin-code-input').placeholder = 'Incorrect Code';
             }
         }
 
+        // ==========================================================
+        // SETTINGS & DISPLAY LOGIC (FIXED)
+        // ==========================================================
+        
+        function updateMatchHeader(matchId) {
+            const date = document.getElementById(`match-date-display-${matchId}`).value || "TBD Date";
+            const court = document.getElementById(`court-select-${matchId}`).value || "TBD Court";
+            const location = document.getElementById(`match-location-input-${matchId}`).value || "TBD Location";
+
+            const startHour = document.getElementById(`start-hour-${matchId}`).value;
+            const startMinute = document.getElementById(`start-minute-${matchId}`).value;
+            const startAmPm = document.getElementById(`start-ampm-${matchId}`).value;
+            
+            const endHour = document.getElementById(`end-hour-${matchId}`).value;
+            const endMinute = document.getElementById(`end-minute-${matchId}`).value;
+            const endAmPm = document.getElementById(`end-ampm-${matchId}`).value;
+
+            let time = "TBD Time";
+            if(startHour && endHour) {
+                const startTime = `${startHour}:${startMinute} ${startAmPm}`;
+                const endTime = `${endHour}:${endMinute} ${endAmPm}`;
+                time = `${startTime} - ${endTime}`;
+            }
+            
+            const matchDetailsElement = document.getElementById(`match-details-${matchId}`);
+
+            matchDetailsElement.textContent = 
+                `${date} | ${time} | ${court} | ${location} | Slots: ${MAX_SLOTS.Total}`;
+        }
+
+        /**
+         * Saves the current settings for a match to Firestore.
+         */
+        async function saveMatchSettings(matchId) {
+            if (!isAdminActive) {
+                 console.warn("Attempted to save settings without admin privileges.");
+                 return;
+            }
+            
+            const settingsData = {
+                date: document.getElementById(`match-date-display-${matchId}`).value,
+                court: document.getElementById(`court-select-${matchId}`).value,
+                location: document.getElementById(`match-location-input-${matchId}`).value,
+                startHour: document.getElementById(`start-hour-${matchId}`).value,
+                startMinute: document.getElementById(`start-minute-${matchId}`).value,
+                startAmPm: document.getElementById(`start-ampm-${matchId}`).value,
+                endHour: document.getElementById(`end-hour-${matchId}`).value,
+                endMinute: document.getElementById(`end-minute-${matchId}`).value,
+                endAmPm: document.getElementById(`end-ampm-${matchId}`).value,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const docRef = getSettingsDoc(matchId);
+            try {
+                // Use set with merge: true to avoid overwriting the document completely if other fields were there
+                await docRef.set(settingsData, { merge: true }); 
+            } catch (error) {
+                console.error(`Error saving Match ${matchId} settings:`, error);
+            }
+        }
+        
+        /**
+         * Gets default settings for a match.
+         */
+        function getDefaultSettings(matchId) {
+            const defaultDate = '2025-12-05';
+            const defaultCourt = matchId === 1 ? 'Court 1' : 'Court 2';
+            const defaultStartHour = matchId === 1 ? '7' : '8';
+            const defaultEndHour = matchId === 1 ? '9' : '10';
+
+            return {
+                date: defaultDate,
+                court: defaultCourt,
+                location: 'Performance Zone',
+                startHour: defaultStartHour,
+                startMinute: '00',
+                startAmPm: 'PM',
+                endHour: defaultEndHour,
+                endMinute: '00',
+                endAmPm: 'PM'
+            };
+        }
+
+        /**
+         * Sets the form inputs based on settings data.
+         */
+        function applySettingsToInputs(matchId, settings) {
+            document.getElementById(`match-date-display-${matchId}`).value = settings.date;
+            document.getElementById(`match-date-input-${matchId}`).value = settings.date;
+            document.getElementById(`court-select-${matchId}`).value = settings.court;
+            document.getElementById(`match-location-input-${matchId}`).value = settings.location;
+
+            document.getElementById(`start-hour-${matchId}`).value = settings.startHour;
+            document.getElementById(`start-minute-${matchId}`).value = settings.startMinute;
+            document.getElementById(`start-ampm-${matchId}`).value = settings.startAmPm;
+            
+            document.getElementById(`end-hour-${matchId}`).value = settings.endHour;
+            document.getElementById(`end-minute-${matchId}`).value = settings.endMinute;
+            document.getElementById(`end-ampm-${matchId}`).value = settings.endAmPm;
+            
+            updateMatchHeader(matchId); 
+        }
+
+        /**
+         * Sets up a real-time listener to load and display settings from Firestore.
+         */
+        function loadMatchSettings(matchId) {
+            const docRef = getSettingsDoc(matchId);
+            
+            docRef.onSnapshot(doc => {
+                if (doc.exists && doc.data()) {
+                    // Data exists: Apply loaded settings
+                    const settings = doc.data();
+                    applySettingsToInputs(matchId, settings);
+                } else {
+                    // Data does NOT exist: Apply default settings and save them if admin
+                    const defaultSettings = getDefaultSettings(matchId);
+                    applySettingsToInputs(matchId, defaultSettings);
+                    
+                    if (isAdminActive) {
+                        console.log(`Match ${matchId} settings doc not found. Saving initial defaults...`);
+                        saveMatchSettings(matchId);
+                    }
+                }
+            }, error => {
+                console.error(`Error loading Match ${matchId} settings:`, error);
+                document.getElementById(`match-details-${matchId}`).textContent = `Error Loading Settings: ${error.code}`;
+            });
+        }
+
+        // ==========================================================
+        // RESERVATION LOGIC (UNCHANGED)
+        // ==========================================================
+        
         async function removeReservation(docId, matchId) {
             if (!isAdminActive) {
                 const messageElement = document.getElementById(getElementId('message', matchId));
@@ -424,7 +556,6 @@
                 messageElement.textContent = `🚫 Admin code required to delete entries.`;
                 return;
             }
-
             const collection = getCollection(matchId);
             try {
                 await collection.doc(docId).delete();
@@ -458,7 +589,6 @@
             let message = "";
             let isError = false;
             
-            // --- VALIDATION CHECKS ---
             if (counts.Total >= MAX_SLOTS.Total) {
                 message = "The total pool is full (12 players).";
                 isError = true;
@@ -476,7 +606,6 @@
                 isError = true;
             }
             
-            // --- Process Reservation or Error ---
             const messageElement = document.getElementById(getElementId('message', matchId));
             messageElement.className = '';
             
@@ -486,7 +615,6 @@
                 return;
             }
             
-            // Reservation Successful - WRITE TO DATABASE
             const newReservation = { 
                 playerName: playerName, 
                 position: position, 
@@ -523,7 +651,6 @@
             
             const renderedSlots = { Setter: 0, Outside: 0, Middle: 0, RS: 0 };
             
-            // Loop 1: Render all occupied slots first
             reservedSlots.forEach(r => {
                 const li = document.createElement('li');
                 li.className = 'reserved-slot';
@@ -540,7 +667,6 @@
                 positionList.appendChild(li);
             });
 
-            // Loop 2: Render all remaining OPEN slots
             for (const [position, max] of Object.entries(MAX_SLOTS)) {
                 if (position === 'Total') continue;
 
@@ -569,10 +695,11 @@
             const data = getMatchData(matchId);
             const collection = getCollection(matchId);
             
-            // Initial call to set the header content
-            updateMatchDetails(matchId);
+            // 1. Load Match Settings from Firestore in Real-Time
+            // This listener will also handle applying defaults and initial saving if needed.
+            loadMatchSettings(matchId);
 
-            // Set up Real-Time Listener
+            // 2. Set up Roster Real-Time Listener
             collection.onSnapshot(snapshot => {
                 data.reservations = [];
                 snapshot.forEach(doc => {
@@ -581,12 +708,14 @@
                 renderRoster(matchId);
             }, error => {
                 document.getElementById(getElementId('message', matchId)).className = 'error';
-                document.getElementById(getElementId('message', matchId)).textContent = `Match ${matchId} Database connection failed.`;
+                document.getElementById(getElementId('message', matchId)).textContent = `Match ${matchId} Database connection failed for roster.`;
                 console.error(`Firestore Listen Failed for Match ${matchId}:`, error);
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Ensure inputs are disabled on page load 
+            setAdminInputsEnabled(false); 
             initializeMatch(1);
             initializeMatch(2); 
         });
