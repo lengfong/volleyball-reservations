@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Volleyball Pool Reservation System (Persistent)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        h1, h2 { text-align: center; color: #333; }
+        /* Roster List Styles */
+        #position-list { list-style: none; padding: 0; width: 600px; max-width: 90%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        #position-list li { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        #position-list li:last-child { border-bottom: none; }
+        .pos-label { font-weight: bold; }
+        /* Reserved Slot Styles */
+        .reserved-slot { background-color: #f8d7da; color: #721c24; text-decoration: none; } 
+        .reserved-slot .pos-label { text-decoration: line-through; } 
+        /* Available Slot Styles */
+        .available-slot { background-color: #d4edda; color: #155724; cursor: pointer; transition: background-color 0.2s; }
+        .available-slot:hover { background-color: #c3e6cb; }
+        .player-info { font-style: italic; color: #007bff; display: flex; align-items: center; }
+        .remove-btn { 
+            margin-left: 15px; 
+            padding: 2px 8px; 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        .remove-btn:hover { background: #c82333; }
+        /* Form/Message Styles */
+        #reservation-form { width: 400px; min-width: 300px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        #reservation-form h3 { margin-bottom: 15px; }
+        #reservation-form input { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
+        #message { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+        .success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+    </style>
+</head>
+<body>
+
+    <h1>🏐 Volleyball Pool Reservation</h1>
+    <h2 id="match-details"></h2>
+
+    <div id="reservation-form">
+        <h3>1. Enter Your Name</h3>
+        <input type="text" id="player-name" placeholder="Your Name" required>
+        
+        <h3>2. Click an OPEN Slot Below</h3>
+        <p id="message"></p>
+    </div>
+
+    <ul id="position-list">
+        </ul>
+    
+    <script>
+        // --- LOCAL STORAGE KEY ---
+        const STORAGE_KEY = 'volleyballReservations';
+
+        // Initial default structure (will be overwritten by localStorage if data exists)
+        let MATCH_DATA = {
+            matchId: 101,
+            date: "2025-12-05",
+            time: "7:00 PM",
+            reservations: [] // This will hold the persistent array of reservations
+        };
+
+        // Define the required slots and maximums
+        const MAX_SLOTS = {
+            Setter: 2,
+            Outside: 4,
+            Middle: 4,
+            RS: 2,
+            Total: 12
+        };
+
+        // --- NEW: FUNCTION TO SAVE DATA TO LOCAL STORAGE ---
+        function saveReservations() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(MATCH_DATA.reservations));
+        }
+
+        // --- NEW: FUNCTION TO LOAD DATA FROM LOCAL STORAGE ---
+        function loadReservations() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    // Parse the JSON data and update the MATCH_DATA object
+                    MATCH_DATA.reservations = JSON.parse(savedData);
+                } catch (e) {
+                    console.error("Error loading reservations from Local Storage:", e);
+                    // If parsing fails, start with an empty array
+                    MATCH_DATA.reservations = []; 
+                }
+            }
+        }
+        
+        // Helper to get current reservation counts for the entire pool
+        function getPoolCounts() {
+            const reservations = MATCH_DATA.reservations;
+            const counts = {
+                Setter: 0,
+                Outside: 0,
+                Middle: 0,
+                RS: 0,
+                Total: reservations.length
+            };
+
+            reservations.forEach(r => {
+                counts[r.position]++;
+            });
+            return counts;
+        }
+
+        // --- ADMIN FUNCTION: REMOVE RESERVATION ---
+        function removeReservation(timestamp) {
+            const initialLength = MATCH_DATA.reservations.length;
+            
+            MATCH_DATA.reservations = MATCH_DATA.reservations.filter(
+                r => r.timestamp !== timestamp
+            );
+            
+            const messageElement = document.getElementById('message');
+            messageElement.className = 'error';
+            
+            if (MATCH_DATA.reservations.length < initialLength) {
+                // IMPORTANT: SAVE AFTER DELETION
+                saveReservations(); 
+
+                messageElement.classList.add('success');
+                messageElement.textContent = `✅ Reservation removed successfully. Slot is now OPEN.`;
+            } else {
+                messageElement.textContent = `🚫 Error: Could not find reservation to remove.`;
+            }
+
+            renderRoster();
+        }
+        // ------------------------------------------------
+
+        // Function called when an OPEN slot is clicked
+        function handleReservationClick(position) {
+            const playerName = document.getElementById('player-name').value.trim();
+            const messageElement = document.getElementById('message');
+            
+            if (!playerName) {
+                messageElement.className = 'error';
+                messageElement.textContent = '🚫 Please enter your name first.';
+                return;
+            }
+            
+            attemptReservation(position, playerName);
+        }
+
+        // Function to handle the reservation attempt and validation
+        function attemptReservation(position, playerName) {
+            const counts = getPoolCounts();
+            let message = "";
+            let isError = false;
+            
+            // --- VALIDATION CHECKS ---
+            
+            if (counts.Total >= MAX_SLOTS.Total) {
+                message = "The total pool is full (12 players).";
+                isError = true;
+            } else if (counts[position] >= MAX_SLOTS[position]) {
+                message = `${position} slots are already full.`;
+                isError = true;
+            } 
+            
+            const isAlreadyReserved = MATCH_DATA.reservations.some(
+                r => r.playerName.toLowerCase() === playerName.toLowerCase()
+            );
+
+            if (!isError && isAlreadyReserved) {
+                message = `${playerName} has already reserved a spot and cannot reserve another.`;
+                isError = true;
+            }
+            
+            // --- Process Reservation or Error ---
+            const messageElement = document.getElementById('message');
+            messageElement.className = '';
+            
+            if (isError) {
+                messageElement.classList.add('error');
+                messageElement.textContent = `🚫 Error: ${message}`;
+                return;
+            }
+            
+            // Reservation Successful
+            const reservation = { playerName: playerName, position: position, timestamp: Date.now() };
+            MATCH_DATA.reservations.push(reservation);
+            
+            // IMPORTANT: SAVE AFTER ADDITION
+            saveReservations(); 
+
+            messageElement.classList.add('success');
+            messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot.`;
+
+            renderRoster();
+        }
+
+        // Function to dynamically update the HTML list display
+        function renderRoster() {
+            const positionList = document.getElementById('position-list');
+            positionList.innerHTML = '';
+            
+            const reservedSlots = [...MATCH_DATA.reservations].sort((a, b) => a.timestamp - b.timestamp);
+            
+            const renderedSlots = { Setter: 0, Outside: 0, Middle: 0, RS: 0 };
+            
+            // Loop 1: Render all occupied slots first
+            reservedSlots.forEach(r => {
+                const li = document.createElement('li');
+                li.className = 'reserved-slot';
+                
+                renderedSlots[r.position]++;
+                
+                li.innerHTML = `<span class="pos-label">${r.position} Slot ${renderedSlots[r.position]}</span> 
+                                <span class
