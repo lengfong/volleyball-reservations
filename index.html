@@ -186,6 +186,7 @@
         /* Form/Message Styles */
         .reservation-form { width: 400px; min-width: 300px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
         .reservation-form h3 { margin-bottom: 15px; }
+        /* NOTE: Added maxlength to input here */
         .reservation-form input[type="text"] { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ced4da; border-radius: 4px; }
         .message { margin-top: 15px; padding: 10px; border-radius: 4px; }
         .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
@@ -264,9 +265,7 @@
         
         <div class="reservation-form">
             <h3>1. Enter Your Name</h3>
-            <input type="text" id="player-name-1" placeholder="Your Name" required>
-            
-            <h3>2. Click an OPEN Slot Below</h3>
+            <input type="text" id="player-name-1" placeholder="Your Name" required maxlength="12"> <h3>2. Click an OPEN Slot Below</h3>
             <p id="message-1" class="message"></p>
         </div>
 
@@ -338,9 +337,7 @@
         
         <div class="reservation-form">
             <h3>1. Enter Your Name</h3>
-            <input type="text" id="player-name-2" placeholder="Your Name" required>
-            
-            <h3>2. Click an OPEN Slot Below</h3>
+            <input type="text" id="player-name-2" placeholder="Your Name" required maxlength="12"> <h3>2. Click an OPEN Slot Below</h3>
             <p id="message-2" class="message"></p>
         </div>
 
@@ -368,8 +365,9 @@
         // ==========================================================
         // CONFIGURATION
         // ==========================================================
-        const VENMO_HANDLE = "LordLengfong"; // ✅ INCORPORATED YOUR VENMO USERNAME
-        const VENMO_AMOUNT = "10.00"; // Optional: Pre-fill amount (e.g., $5.00)
+        const VENMO_HANDLE = "LordLengfong"; 
+        const VENMO_AMOUNT = "5.00"; 
+        const MAX_NAME_LENGTH = 12; // Character limit constant
         
         // --- YOUR FIREBASE CONFIGURATION ---
         const firebaseConfig = {
@@ -588,32 +586,25 @@
         }
 
         // ==========================================================
-        // RESERVATION LOGIC (UPDATED WITH VENMO MODAL)
+        // RESERVATION LOGIC (UPDATED)
         // ==========================================================
 
-        /**
-         * Shows the Venmo modal after a successful reservation.
-         */
         function showVenmoModal(playerName, position, matchId) {
             const modal = document.getElementById('venmo-modal');
             const venmoLink = document.getElementById('venmo-link-button');
             const venmoLinkText = document.getElementById('venmo-link-text');
             
-            // Construct the Venmo Deep Link URL
-            // Format: venmo://paycharge?txn=pay&recipients=USERNAME&amount=AMOUNT&note=NOTE
             const matchDetails = document.getElementById(`match-details-${matchId}`).textContent;
-            const matchName = matchDetails.split('|')[0].trim(); // Get Date or first part of header
+            const matchName = matchDetails.split('|')[0].trim(); 
             
             const note = encodeURIComponent(`Volleyball reservation: ${playerName} - ${position} (${matchName})`);
             
-            // Ensure VENMO_HANDLE is used correctly. Venmo deep links usually omit the '@' symbol.
             const handleWithoutAt = VENMO_HANDLE.startsWith('@') ? VENMO_HANDLE.substring(1) : VENMO_HANDLE;
             
             const venmoUrl = `venmo://paycharge?txn=pay&recipients=${handleWithoutAt}&amount=${VENMO_AMOUNT}&note=${note}`;
             
             venmoLink.href = venmoUrl;
             
-            // Update link button text
             if (VENMO_AMOUNT) {
                  venmoLinkText.textContent = `Pay $${VENMO_AMOUNT} Now via Venmo (@${handleWithoutAt})`;
             } else {
@@ -631,6 +622,8 @@
             let isError = false;
             
             // --- VALIDATION CHECKS ---
+            
+            // 1. Check pool/position capacity (unchanged)
             if (counts.Total >= MAX_SLOTS.Total) {
                 message = "The total pool is full (12 players).";
                 isError = true;
@@ -639,6 +632,7 @@
                 isError = true;
             } 
             
+            // 2. Check for duplicate reservation (unchanged)
             const isAlreadyReserved = data.reservations.some(
                 r => r.playerName.toLowerCase() === playerName.toLowerCase()
             );
@@ -668,11 +662,9 @@
             try {
                 await collection.add(newReservation);
                 
-                // 1. Show temporary success message
                 messageElement.classList.add('success');
                 messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot.`;
                 
-                // 2. Trigger the Venmo modal
                 showVenmoModal(playerName, position, matchId);
                 
             } catch (error) {
@@ -701,16 +693,36 @@
             }
         }
 
+        /**
+         * UPDATED: Handles reservation click, includes name validation.
+         */
         function handleReservationClick(position, matchId) {
-            const playerName = document.getElementById(getElementId('player-name', matchId)).value.trim();
+            const playerNameInput = document.getElementById(getElementId('player-name', matchId));
+            const playerName = playerNameInput.value.trim();
             const messageElement = document.getElementById(getElementId('message', matchId));
+            messageElement.className = '';
             
             if (!playerName) {
-                messageElement.className = 'error';
+                messageElement.classList.add('error');
                 messageElement.textContent = '🚫 Please enter your name first.';
                 return;
             }
             
+            // Regex to check for only English letters (A-Z, a-z)
+            const englishLettersOnly = /^[a-zA-Z]+$/;
+            
+            if (playerName.length > MAX_NAME_LENGTH) {
+                messageElement.classList.add('error');
+                messageElement.textContent = `🚫 Name is too long. Max ${MAX_NAME_LENGTH} letters allowed.`;
+                return;
+            }
+
+            if (!englishLettersOnly.test(playerName)) {
+                messageElement.classList.add('error');
+                messageElement.textContent = '🚫 Name can only contain English letters (no spaces, numbers, or special characters).';
+                return;
+            }
+
             attemptReservation(position, playerName, matchId);
         }
 
