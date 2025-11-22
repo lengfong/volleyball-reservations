@@ -1,6 +1,10 @@
-<meta charset="UTF-8">
-<title></title>
-<style type="text/css">body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Volleyball Pool Reservation System (LIVE Database)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2 { text-align: center; color: #333; }
         /* Roster List Styles */
         #position-list { list-style: none; padding: 0; width: 600px; max-width: 90%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -8,11 +12,24 @@
         #position-list li:last-child { border-bottom: none; }
         .pos-label { font-weight: bold; }
         /* Reserved Slot Styles */
-        .reserved-slot { background-color: #f8d7da; color: #721c24; text-decoration: line-through; }
+        .reserved-slot { background-color: #f8d7da; color: #721c24; text-decoration: none; } 
+        .reserved-slot .pos-label { text-decoration: line-through; } 
         /* Available Slot Styles */
         .available-slot { background-color: #d4edda; color: #155724; cursor: pointer; transition: background-color 0.2s; }
         .available-slot:hover { background-color: #c3e6cb; }
-        .player-info { font-style: italic; color: #007bff; }
+        .player-info { font-style: italic; color: #007bff; display: flex; align-items: center; }
+        .remove-btn { 
+            margin-left: 15px; 
+            padding: 2px 8px; 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        .remove-btn:hover { background: #c82333; }
         /* Form/Message Styles */
         #reservation-form { width: 400px; min-width: 300px; margin: 30px auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
         #reservation-form h3 { margin-bottom: 15px; }
@@ -20,28 +37,57 @@
         #message { margin-top: 15px; padding: 10px; border-radius: 4px; }
         .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
         .success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
-</style>
-<h1>🏐 Volleyball Pool Reservation</h1>
+    </style>
+</head>
+<body>
 
-<h2 id="match-details">&nbsp;</h2>
+    <h1>🏐 Volleyball Pool Reservation</h1>
+    <h2 id="match-details"></h2>
 
-<div id="reservation-form">
-<h3>1. Enter Your Name</h3>
-<input id="player-name" placeholder="Your Name" required="" type="text" />
-<h3>2. Click an OPEN Slot Below</h3>
+    <div id="reservation-form">
+        <h3>1. Enter Your Name</h3>
+        <input type="text" id="player-name" placeholder="Your Name" required>
+        
+        <h3>2. Click an OPEN Slot Below</h3>
+        <p id="message"></p>
+    </div>
 
-<p id="message">&nbsp;</p>
-</div>
+    <ul id="position-list">
+        </ul>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-<ul id="position-list">
-</ul>
-<script>
-        // The "Live Database" stored in a JavaScript object
-        const MATCH_DATA = {
+    <script>
+        // ==========================================================
+        // STEP 2: PASTE YOUR FIREBASE CONFIGURATION HERE
+        // REPLACE THE PLACEHOLDER VALUES WITH YOUR ACTUAL CREDENTIALS
+        // ==========================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2Dz--Ey8wFfTjjJG33Eb8nnf1Q9Rbw8o", // <--- PASTE YOUR API KEY
+            authDomain: "volleyballreservationapp.firebaseapp.com", // <--- PASTE YOUR AUTH DOMAIN
+            projectId: "volleyballreservationapp", // <--- PASTE YOUR PROJECT ID
+            storageBucket: "volleyballreservationapp.firebasestorage.app",
+            messagingSenderId: "381261749452",
+            appId: "1:381261749452:web:5a07063f5a65d98ff4f669",
+            measurementId: "G-VB9Z6KC6P2"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Reference the collection where reservations will be stored.
+        // This MUST match the Collection ID you created in Firebase: 'reservations_match_101'
+        const reservationsCollection = db.collection("reservations_match_101");
+        // ==========================================================
+
+        // Data storage is now local cache synced with Firebase
+        let MATCH_DATA = {
             matchId: 101,
             date: "2025-12-05",
             time: "7:00 PM",
-            reservations: [] // Single array for all 12 players
+            reservations: [] // Local array to hold fetched reservations
         };
 
         // Define the required slots and maximums
@@ -52,8 +98,8 @@
             RS: 2,
             Total: 12
         };
-
-        // Helper to get current reservation counts for the entire pool
+        
+        // Helper to get current reservation counts from the local cache
         function getPoolCounts() {
             const reservations = MATCH_DATA.reservations;
             const counts = {
@@ -70,6 +116,25 @@
             return counts;
         }
 
+        // --- ADMIN FUNCTION: REMOVE RESERVATION (async) ---
+        // docId is the unique Firestore Document ID
+        async function removeReservation(docId) {
+            try {
+                // Delete the document from Firestore using its document ID
+                await reservationsCollection.doc(docId).delete();
+                // The real-time listener will automatically update the UI.
+
+                const messageElement = document.getElementById('message');
+                messageElement.className = 'success';
+                messageElement.textContent = `✅ Reservation removed successfully from database. Slot is now OPEN.`;
+            } catch (error) {
+                const messageElement = document.getElementById('message');
+                messageElement.className = 'error';
+                messageElement.textContent = `🚫 Error removing reservation: ${error.message}`;
+            }
+        }
+        // ------------------------------------------------
+
         // Function called when an OPEN slot is clicked
         function handleReservationClick(position) {
             const playerName = document.getElementById('player-name').value.trim();
@@ -81,22 +146,32 @@
                 return;
             }
             
-            // Proceed with reservation attempt
             attemptReservation(position, playerName);
         }
 
-        // Function to handle the reservation attempt and validation
-        function attemptReservation(position, playerName) {
+        // Function to handle the reservation attempt and validation (async)
+        async function attemptReservation(position, playerName) {
             const counts = getPoolCounts();
             let message = "";
             let isError = false;
             
-            // --- Validation Checks ---
+            // --- VALIDATION CHECKS ---
+            
             if (counts.Total >= MAX_SLOTS.Total) {
                 message = "The total pool is full (12 players).";
                 isError = true;
             } else if (counts[position] >= MAX_SLOTS[position]) {
                 message = `${position} slots are already full.`;
+                isError = true;
+            } 
+            
+            // Prevent duplicate reservations by the same player name
+            const isAlreadyReserved = MATCH_DATA.reservations.some(
+                r => r.playerName.toLowerCase() === playerName.toLowerCase()
+            );
+
+            if (!isError && isAlreadyReserved) {
+                message = `${playerName} has already reserved a spot and cannot reserve another.`;
                 isError = true;
             }
             
@@ -110,24 +185,46 @@
                 return;
             }
             
-            // Reservation Successful
-            // We use a timestamp to maintain the order in which spots were taken
-            const reservation = { playerName: playerName, position: position, timestamp: Date.now() };
-            MATCH_DATA.reservations.push(reservation);
-            
-            messageElement.classList.add('success');
-            messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot.`;
+            // Reservation Successful - WRITE TO DATABASE
+            const newReservation = { 
+                playerName: playerName, 
+                position: position, 
+                // Use serverTimestamp for reliable ordering
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            };
 
-            renderRoster(); // Update the list display
+            try {
+                await reservationsCollection.add(newReservation);
+                
+                messageElement.classList.add('success');
+                messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot and saved to database.`;
+                
+                // Real-time listener handles the renderRoster call
+            } catch (error) {
+                messageElement.classList.add('error');
+                messageElement.textContent = `🚫 Database Error: ${error.message}`;
+            }
         }
 
         // Function to dynamically update the HTML list display
         function renderRoster() {
             const positionList = document.getElementById('position-list');
-            positionList.innerHTML = ''; // Clear existing list items
+            positionList.innerHTML = '';
             
-            // Sort reservations by time to display them in the order they were taken
-            const reservedSlots = [...MATCH_DATA.reservations].sort((a, b) => a.timestamp - b.timestamp);
+            // Sort reservations: First by position (for visual grouping), then by timestamp
+            const reservedSlots = [...MATCH_DATA.reservations].sort((a, b) => {
+                // Ensure timestamp exists before using toMillis
+                const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+                const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+                
+                if (a.position !== b.position) {
+                    // Custom sort order based on MAX_SLOTS keys for visual consistency
+                    const order = Object.keys(MAX_SLOTS);
+                    return order.indexOf(a.position) - order.indexOf(b.position);
+                }
+                // Fallback sort by timestamp if positions are the same
+                return timeA - timeB;
+            });
             
             const renderedSlots = { Setter: 0, Outside: 0, Middle: 0, RS: 0 };
             
@@ -136,11 +233,14 @@
                 const li = document.createElement('li');
                 li.className = 'reserved-slot';
                 
-                // Increment count for the position that is being rendered
                 renderedSlots[r.position]++;
                 
+                // r.id holds the Firestore document ID for deletion
                 li.innerHTML = `<span class="pos-label">${r.position} Slot ${renderedSlots[r.position]}</span> 
-                                <span class="player-info">${r.playerName} (TAKEN)</span>`;
+                                <span class="player-info">
+                                    Reserved by: ${r.playerName} 
+                                    <button class="remove-btn" onclick="removeReservation('${r.id}')">X Remove</button>
+                                </span>`;
                 positionList.appendChild(li);
             });
 
@@ -154,7 +254,6 @@
                     const li = document.createElement('li');
                     li.className = 'available-slot';
                     
-                    // The position for this slot is the key for the reservation logic
                     const currentSlotNumber = renderedSlots[position] + i + 1;
                     li.setAttribute('data-position', position);
                     li.onclick = () => handleReservationClick(position);
@@ -169,6 +268,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('match-details').textContent = 
                 `Match #${MATCH_DATA.matchId} on ${MATCH_DATA.date} at ${MATCH_DATA.time} | Total Slots: ${MAX_SLOTS.Total}`;
-            renderRoster(); // Display the initial empty roster
+            
+            // STEP 3: SET UP REAL-TIME LISTENER
+            // This listener fetches the data and calls renderRoster whenever the database changes.
+            reservationsCollection.onSnapshot(snapshot => {
+                MATCH_DATA.reservations = [];
+                snapshot.forEach(doc => {
+                    // Push the data, including the document ID (doc.id) for removal
+                    MATCH_DATA.reservations.push({ ...doc.data(), id: doc.id });
+                });
+                renderRoster();
+            }, error => {
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = `Database connection failed. Check console for details.`;
+                console.error("Firestore Listen Failed:", error);
+            });
         });
     </script>
+</body>
+</html>
