@@ -366,7 +366,7 @@
         // CONFIGURATION
         // ==========================================================
         const VENMO_HANDLE = "LordLengfong"; 
-        const VENMO_AMOUNT = "5.00"; 
+        const VENMO_AMOUNT = "10.00"; // ✅ UPDATED TO $10.00
         const MAX_NAME_LENGTH = 12; // Character limit constant
         
         // --- YOUR FIREBASE CONFIGURATION ---
@@ -586,7 +586,7 @@
         }
 
         // ==========================================================
-        // RESERVATION LOGIC (UPDATED)
+        // RESERVATION LOGIC 
         // ==========================================================
 
         function showVenmoModal(playerName, position, matchId) {
@@ -693,9 +693,6 @@
             }
         }
 
-        /**
-         * UPDATED: Handles reservation click, includes name validation.
-         */
         function handleReservationClick(position, matchId) {
             const playerNameInput = document.getElementById(getElementId('player-name', matchId));
             const playerName = playerNameInput.value.trim();
