@@ -7,7 +7,58 @@
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
         h1, h2, h3 { text-align: center; color: #333; }
         
-        /* New Admin Control Panel Style */
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; 
+            z-index: 100; /* High z-index to cover everything */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 10px;
+            width: 80%; /* Width for mobile view */
+            max-width: 350px;
+            text-align: center;
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1; /* Match font-size */
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #venmo-link-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #008CFF; /* Venmo Blue */
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 1.1em;
+            transition: background-color 0.2s;
+        }
+        #venmo-link-button:hover {
+            background-color: #0070cc;
+        }
+        
+        /* Admin Control Panel Style */
         #admin-control {
             text-align: center;
             margin: 20px auto 30px;
@@ -297,13 +348,30 @@
             </ul>
     </div>
     
+    <div id="venmo-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('venmo-modal').style.display='none'">&times;</span>
+        <h3>Reservation Confirmed! 🎉</h3>
+        <p>Your spot is reserved. Please send payment to secure your place.</p>
+        <p>Don't forget to **Venmo** me!</p>
+        <a id="venmo-link-button" href="#" target="_blank">
+            <span id="venmo-link-text">Pay Now via Venmo</span>
+        </a>
+        <p style="margin-top: 15px; font-size: 0.9em; color: #666;">Note: This link will attempt to open the Venmo app.</p>
+      </div>
+    </div>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
         // ==========================================================
-        // FIREBASE CONFIGURATION (Use your unique credentials)
+        // CONFIGURATION
         // ==========================================================
+        const VENMO_HANDLE = "LordLengfong"; // ✅ INCORPORATED YOUR VENMO USERNAME
+        const VENMO_AMOUNT = "10.00"; // Optional: Pre-fill amount (e.g., $5.00)
+        
+        // --- YOUR FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyD2Dz--Ey8wFfTjjJG33Eb8nnf1Q9Rbw8o", 
             authDomain: "volleyballreservationapp.firebaseapp.com",
@@ -317,16 +385,12 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
-        // --- RESERVATION COLLECTIONS ---
         const reservationsCollection1 = db.collection("reservations_match_101");
         const reservationsCollection2 = db.collection("reservations_match_102");
-        
-        // --- NEW SETTINGS COLLECTION ---
         const settingsCollection = db.collection("match_settings");
         const matchSettingsDoc1 = settingsCollection.doc("match_1");
         const matchSettingsDoc2 = settingsCollection.doc("match_2");
 
-        // --- ADMIN CODE SETUP ---
         const ADMIN_CODE = "youknowHTMLtooisee"; 
         let isAdminActive = false;
         
@@ -336,7 +400,7 @@
         const MAX_SLOTS = { Setter: 2, Outside: 4, Middle: 4, RS: 2, Total: 12 };
         
         // ==========================================================
-        // HELPER FUNCTIONS
+        // HELPER FUNCTIONS 
         // ==========================================================
 
         function getMatchData(matchId) {
@@ -364,12 +428,11 @@
         }
         
         // ==========================================================
-        // ADMIN LOCK/UNLOCK LOGIC
+        // ADMIN LOCK/UNLOCK LOGIC 
         // ==========================================================
         
         function getAdminInputs(matchId) {
             const container = document.getElementById(`match-${matchId}-container`);
-            // Exclude the hidden date input, but include the visible date display
             return container.querySelectorAll('.admin-details input:not([type="date"]), .admin-details select');
         }
 
@@ -393,10 +456,7 @@
             if (inputCode === ADMIN_CODE) {
                 isAdminActive = true;
                 
-                // 1. Enable Match Settings Inputs
                 setAdminInputsEnabled(true);
-                
-                // 2. Enable Delete Buttons
                 removeButtons.forEach(btn => btn.classList.add('active'));
                 
                 document.getElementById('admin-code-input').style.border = '2px solid green';
@@ -404,19 +464,16 @@
             } else {
                 isAdminActive = false;
                 
-                // 1. Disable Match Settings Inputs
                 setAdminInputsEnabled(false);
-                
-                // 2. Disable Delete Buttons
                 removeButtons.forEach(btn => btn.classList.remove('active'));
                 
                 document.getElementById('admin-code-input').style.border = '2px solid red';
                 document.getElementById('admin-code-input').placeholder = 'Incorrect Code';
             }
         }
-
+        
         // ==========================================================
-        // SETTINGS & DISPLAY LOGIC (FIXED)
+        // SETTINGS & DISPLAY LOGIC 
         // ==========================================================
         
         function updateMatchHeader(matchId) {
@@ -445,9 +502,6 @@
                 `${date} | ${time} | ${court} | ${location} | Slots: ${MAX_SLOTS.Total}`;
         }
 
-        /**
-         * Saves the current settings for a match to Firestore.
-         */
         async function saveMatchSettings(matchId) {
             if (!isAdminActive) {
                  console.warn("Attempted to save settings without admin privileges.");
@@ -469,16 +523,12 @@
 
             const docRef = getSettingsDoc(matchId);
             try {
-                // Use set with merge: true to avoid overwriting the document completely if other fields were there
                 await docRef.set(settingsData, { merge: true }); 
             } catch (error) {
                 console.error(`Error saving Match ${matchId} settings:`, error);
             }
         }
         
-        /**
-         * Gets default settings for a match.
-         */
         function getDefaultSettings(matchId) {
             const defaultDate = '2025-12-05';
             const defaultCourt = matchId === 1 ? 'Court 1' : 'Court 2';
@@ -498,9 +548,6 @@
             };
         }
 
-        /**
-         * Sets the form inputs based on settings data.
-         */
         function applySettingsToInputs(matchId, settings) {
             document.getElementById(`match-date-display-${matchId}`).value = settings.date;
             document.getElementById(`match-date-input-${matchId}`).value = settings.date;
@@ -518,19 +565,14 @@
             updateMatchHeader(matchId); 
         }
 
-        /**
-         * Sets up a real-time listener to load and display settings from Firestore.
-         */
         function loadMatchSettings(matchId) {
             const docRef = getSettingsDoc(matchId);
             
             docRef.onSnapshot(doc => {
                 if (doc.exists && doc.data()) {
-                    // Data exists: Apply loaded settings
                     const settings = doc.data();
                     applySettingsToInputs(matchId, settings);
                 } else {
-                    // Data does NOT exist: Apply default settings and save them if admin
                     const defaultSettings = getDefaultSettings(matchId);
                     applySettingsToInputs(matchId, defaultSettings);
                     
@@ -546,8 +588,98 @@
         }
 
         // ==========================================================
-        // RESERVATION LOGIC (UNCHANGED)
+        // RESERVATION LOGIC (UPDATED WITH VENMO MODAL)
         // ==========================================================
+
+        /**
+         * Shows the Venmo modal after a successful reservation.
+         */
+        function showVenmoModal(playerName, position, matchId) {
+            const modal = document.getElementById('venmo-modal');
+            const venmoLink = document.getElementById('venmo-link-button');
+            const venmoLinkText = document.getElementById('venmo-link-text');
+            
+            // Construct the Venmo Deep Link URL
+            // Format: venmo://paycharge?txn=pay&recipients=USERNAME&amount=AMOUNT&note=NOTE
+            const matchDetails = document.getElementById(`match-details-${matchId}`).textContent;
+            const matchName = matchDetails.split('|')[0].trim(); // Get Date or first part of header
+            
+            const note = encodeURIComponent(`Volleyball reservation: ${playerName} - ${position} (${matchName})`);
+            
+            // Ensure VENMO_HANDLE is used correctly. Venmo deep links usually omit the '@' symbol.
+            const handleWithoutAt = VENMO_HANDLE.startsWith('@') ? VENMO_HANDLE.substring(1) : VENMO_HANDLE;
+            
+            const venmoUrl = `venmo://paycharge?txn=pay&recipients=${handleWithoutAt}&amount=${VENMO_AMOUNT}&note=${note}`;
+            
+            venmoLink.href = venmoUrl;
+            
+            // Update link button text
+            if (VENMO_AMOUNT) {
+                 venmoLinkText.textContent = `Pay $${VENMO_AMOUNT} Now via Venmo (@${handleWithoutAt})`;
+            } else {
+                 venmoLinkText.textContent = `Pay Now via Venmo (@${handleWithoutAt})`;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        async function attemptReservation(position, playerName, matchId) {
+            const counts = getPoolCounts(matchId);
+            const collection = getCollection(matchId);
+            const data = getMatchData(matchId);
+            let message = "";
+            let isError = false;
+            
+            // --- VALIDATION CHECKS ---
+            if (counts.Total >= MAX_SLOTS.Total) {
+                message = "The total pool is full (12 players).";
+                isError = true;
+            } else if (counts[position] >= MAX_SLOTS[position]) {
+                message = `${position} slots are already full.`;
+                isError = true;
+            } 
+            
+            const isAlreadyReserved = data.reservations.some(
+                r => r.playerName.toLowerCase() === playerName.toLowerCase()
+            );
+
+            if (!isError && isAlreadyReserved) {
+                message = `${playerName} has already reserved a spot in Match ${matchId} and cannot reserve another.`;
+                isError = true;
+            }
+            
+            // --- Process Reservation or Error ---
+            const messageElement = document.getElementById(getElementId('message', matchId));
+            messageElement.className = '';
+            
+            if (isError) {
+                messageElement.classList.add('error');
+                messageElement.textContent = `🚫 Match ${matchId} Error: ${message}`;
+                return;
+            }
+            
+            // Reservation Successful - WRITE TO DATABASE
+            const newReservation = { 
+                playerName: playerName, 
+                position: position, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            };
+
+            try {
+                await collection.add(newReservation);
+                
+                // 1. Show temporary success message
+                messageElement.classList.add('success');
+                messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot.`;
+                
+                // 2. Trigger the Venmo modal
+                showVenmoModal(playerName, position, matchId);
+                
+            } catch (error) {
+                messageElement.classList.add('error');
+                messageElement.textContent = `🚫 Database Error (Match ${matchId}): ${error.message}`;
+            }
+        }
         
         async function removeReservation(docId, matchId) {
             if (!isAdminActive) {
@@ -580,57 +712,6 @@
             }
             
             attemptReservation(position, playerName, matchId);
-        }
-
-        async function attemptReservation(position, playerName, matchId) {
-            const counts = getPoolCounts(matchId);
-            const collection = getCollection(matchId);
-            const data = getMatchData(matchId);
-            let message = "";
-            let isError = false;
-            
-            if (counts.Total >= MAX_SLOTS.Total) {
-                message = "The total pool is full (12 players).";
-                isError = true;
-            } else if (counts[position] >= MAX_SLOTS[position]) {
-                message = `${position} slots are already full.`;
-                isError = true;
-            } 
-            
-            const isAlreadyReserved = data.reservations.some(
-                r => r.playerName.toLowerCase() === playerName.toLowerCase()
-            );
-
-            if (!isError && isAlreadyReserved) {
-                message = `${playerName} has already reserved a spot in Match ${matchId} and cannot reserve another.`;
-                isError = true;
-            }
-            
-            const messageElement = document.getElementById(getElementId('message', matchId));
-            messageElement.className = '';
-            
-            if (isError) {
-                messageElement.classList.add('error');
-                messageElement.textContent = `🚫 Match ${matchId} Error: ${message}`;
-                return;
-            }
-            
-            const newReservation = { 
-                playerName: playerName, 
-                position: position, 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-            };
-
-            try {
-                await collection.add(newReservation);
-                
-                messageElement.classList.add('success');
-                messageElement.textContent = `✅ Success! ${playerName} reserved a ${position} slot in Match ${matchId}.`;
-                
-            } catch (error) {
-                messageElement.classList.add('error');
-                messageElement.textContent = `🚫 Database Error (Match ${matchId}): ${error.message}`;
-            }
         }
 
         function renderRoster(matchId) {
@@ -695,11 +776,8 @@
             const data = getMatchData(matchId);
             const collection = getCollection(matchId);
             
-            // 1. Load Match Settings from Firestore in Real-Time
-            // This listener will also handle applying defaults and initial saving if needed.
             loadMatchSettings(matchId);
 
-            // 2. Set up Roster Real-Time Listener
             collection.onSnapshot(snapshot => {
                 data.reservations = [];
                 snapshot.forEach(doc => {
@@ -714,10 +792,17 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Ensure inputs are disabled on page load 
             setAdminInputsEnabled(false); 
             initializeMatch(1);
             initializeMatch(2); 
+            
+            // Close modal when user clicks outside of it
+            window.onclick = function(event) {
+                const modal = document.getElementById('venmo-modal');
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
         });
     </script>
 </body>
